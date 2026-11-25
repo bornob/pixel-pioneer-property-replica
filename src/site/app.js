@@ -50,10 +50,57 @@ export function startSite() {
       toast('Account created! Signing you in...');
       f.reset();
       if (data.session) initSession();
-      else {
-        document.getElementById('to-signin').click();
-        toast('Account ready! Now please Sign In (or check email if confirmation is enabled).');
-      }
+      else showVerify(data.user?.email || '');
+    };
+
+    // EMAIL CODE VERIFICATION
+    let verifyEmail = '';
+    let resendTimer = null;
+    function startResendWait() {
+      const btn = document.getElementById('resend-code');
+      let left = 60;
+      clearInterval(resendTimer);
+      btn.disabled = true;
+      btn.textContent = 'Resend code (' + left + 's)';
+      resendTimer = setInterval(() => {
+        left--;
+        if (left <= 0) {
+          clearInterval(resendTimer);
+          btn.disabled = false;
+          btn.textContent = 'Resend code';
+        } else btn.textContent = 'Resend code (' + left + 's)';
+      }, 1000);
+    }
+    function showVerify(email) {
+      verifyEmail = email;
+      document.getElementById('verify-email').textContent = email;
+      document.getElementById('signup-panel').classList.add('hidden');
+      document.getElementById('signin-panel').classList.add('hidden');
+      document.getElementById('verify-panel').classList.remove('hidden');
+      toast('We sent a 6-digit code to your email.');
+      startResendWait();
+    }
+    document.getElementById('verify-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const { data, error } = await sb.auth.verifyOtp({
+        email: verifyEmail,
+        token: f.code.value.trim(),
+        type: 'signup'
+      });
+      if (error) return toast('Verification Error: ' + error.message);
+      f.reset();
+      clearInterval(resendTimer);
+      document.getElementById('verify-panel').classList.add('hidden');
+      document.getElementById('signin-panel').classList.remove('hidden');
+      toast('Email verified!');
+      if (data.session) initSession();
+    };
+    document.getElementById('resend-code').onclick = async () => {
+      const { error } = await sb.auth.resend({ type: 'signup', email: verifyEmail });
+      if (error) return toast('Resend Error: ' + error.message);
+      toast('A new code has been sent.');
+      startResendWait();
     };
 
     // SIGN IN
