@@ -28,3 +28,4 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+- The home page is the user's uploaded index.html copied verbatim (src/site); Tailwind's stylesheet is not loaded so its reset can't alter the original design.
